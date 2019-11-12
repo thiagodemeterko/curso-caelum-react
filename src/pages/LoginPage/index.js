@@ -1,7 +1,9 @@
 import React, { Component, Fragment } from 'react'
 import Cabecalho from '../../components/Cabecalho'
 import Widget from '../../components/Widget'
-
+import {NotificacaoContext} from '../../contexts/NotificacaoContext';
+import {LoginService} from '../../services/LoginService';
+import {InputFormField} from '../../components/InputFormField';
 import './loginPage.css'
 
 class LoginPage extends Component {
@@ -9,43 +11,49 @@ class LoginPage extends Component {
     constructor() {
         super();
         this.state = {
+            values: {   
+                inputLogin: "",
+                inputSenha: ""
+            },
+            errors: {},
             erro: ""
         };
-    }  
+    }
+
+    formValidations = () => {
+        const {inputLogin, inputSenha} = this.state.values;
+        const errors = {};
+        
+        if(!inputLogin) errors.inputLogin = "Campo Login é obrigatório";
+
+        if(!inputSenha) errors.inputSenha = "Campo Senha é obrigatório";
+
+        this.setState({errors});
+    }
+
+    onFormFieldChange = ({target}) => {
+        const value = target.value;
+        const name = target.name;
+        const values = {...this.state.values, [name]: value};
+        this.setState({values}, () => {
+            this.formValidations();
+        })
+    }
+
+    static contextType = NotificacaoContext;
 
     fazerLogin = infosDoEvento => {
         infosDoEvento.preventDefault();
 
         const dadosDeLogin = {
-            login: this.refs.inputLogin.value,
-            senha: this.refs.inputSenha.value
+            login: this.state.values.inputLogin,
+            senha: this.state.values.inputSenha
         };
 
-        fetch("https://twitelum-api.herokuapp.com/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(dadosDeLogin)
-        })
-        .then(async responseDoServer => {
-            if (!responseDoServer.ok) {
-                const respostaDeErroDoServidor = await responseDoServer.json();
-                const errorObj = Error(respostaDeErroDoServidor.message);
-                errorObj.status = responseDoServer.status;
-                throw errorObj;
-            }
-            return responseDoServer.json();
-        })
-        .then(dadosDoServidorEmObj => {
-            const token = dadosDoServidorEmObj.token;
-            if(token) {
-                localStorage.setItem("TOKEN", token);
-                this.props.history.push("/");
-            }
-            this.setState({
-                erro: ""
-            })
+        LoginService.logar(dadosDeLogin)
+        .then(() => { 
+            this.context.setMsg("Bem vindo ao Twitelum, login foi efetuado com sucesso!");
+            this.props.history.push("/");
         })
         .catch(err => {
             console.error(`[Erro ${err.status}]`, err.message);
@@ -55,7 +63,7 @@ class LoginPage extends Component {
             }, () => 
                 setTimeout(() => this.setState({
                     erro: ""
-                }), 1000)
+                }), 1500)
             )
         });
     }
@@ -69,14 +77,21 @@ class LoginPage extends Component {
                         <Widget>
                             <h2 className="loginPage__title">Seja bem vindo!</h2>
                             <form className="loginPage__form" action="/" onSubmit={this.fazerLogin}>
-                                <div className="loginPage__inputWrap">
-                                    <label className="loginPage__label" htmlFor="login">Login</label> 
-                                    <input ref="inputLogin" className="loginPage__input" type="text" id="login" name="login"/>
-                                </div>
-                                <div className="loginPage__inputWrap">
-                                    <label className="loginPage__label" htmlFor="senha">Senha</label> 
-                                    <input ref="inputSenha" className="loginPage__input" type="password" id="senha" name="senha"/>
-                                </div>
+                                <InputFormField
+                                    id="inputLogin"
+                                    label="Login: "
+                                    onChange={this.onFormFieldChange}
+                                    values={this.state.values}
+                                    errors={this.state.errors}
+                                />
+                                <InputFormField
+                                    id="inputSenha"
+                                    label="Senha: "
+                                    onChange={this.onFormFieldChange}
+                                    values={this.state.values}
+                                    errors={this.state.errors}
+                                />
+                                
                                 {
                                     this.state.erro 
                                     &&

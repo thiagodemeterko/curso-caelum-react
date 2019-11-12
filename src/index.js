@@ -16,11 +16,14 @@ import * as serviceWorker from "./serviceWorker";
 
 import {BrowserRouter} from "react-router-dom";
 import Roteamento from "./routes.js";
+import { NotificacaoContextProvider } from "./contexts/NotificacaoContext";
 
 ReactDOM.render(
-    <BrowserRouter>
-        <Roteamento/>
-    </BrowserRouter>, 
+    <NotificacaoContextProvider>
+        <BrowserRouter>
+            <Roteamento/>
+        </BrowserRouter>
+    </NotificacaoContextProvider>, 
     document.getElementById("root")
 );
 
